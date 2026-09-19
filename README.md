@@ -1,6 +1,4 @@
 # MeowLib UI Library
-![image]()
-
 - Extensive Documentation
 - Beautiful Interface
 - Consistent Updates
@@ -14,4 +12,4 @@ Join the discord - discord.gg/MeowLib
 
 ## Credits:
 
-- [SilosDev-scripts/Meow](https://github.com/Silosdev/nac24) - Configuration system.
+- [SilosDev-scripts/Meow/LiblrCreditsx](https://github.com/Silosdev/nac24) - Configuration system.
