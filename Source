@@ -1,0 +1,2261 @@
+local Meow = { 
+	Options = {}, 
+	Folder = "Meow", 
+	GetService = function(service)
+		return cloneref and cloneref(game:GetService(service)) or game:GetService(service)
+	end
+}
+
+--// Services
+local TweenService = Meow.GetService("TweenService")
+local RunService = Meow.GetService("RunService")
+local HttpService = Meow.GetService("HttpService")
+local ContentProvider = Meow.GetService("ContentProvider")
+local UserInputService = Meow.GetService("UserInputService")
+local Lighting = Meow.GetService("Lighting")
+local Players = Meow.GetService("Players")
+
+--// Variables
+local isStudio = RunService:IsStudio()
+local LocalPlayer = Players.LocalPlayer
+
+local windowState
+local acrylicBlur
+local hasGlobalSetting
+
+local tabs = {}
+local currentTabInstance = nil
+local tabIndex = 0
+local unloaded = false
+
+local assets = {
+	interFont = "rbxassetid://12187365364",
+	userInfoBlurred = "rbxassetid://18824089198",
+	toggleBackground = "rbxassetid://18772190202",
+	togglerHead = "rbxassetid://18772309008",
+	buttonImage = "rbxassetid://10709791437",
+	searchIcon = "rbxassetid://86737463322606",
+	colorWheel = "rbxassetid://2849458409",
+	colorTarget = "rbxassetid://73265255323268",
+	grid = "rbxassetid://121484455191370",
+	globe = "rbxassetid://108952102602834",
+	transform = "rbxassetid://90336395745819",
+	dropdown = "rbxassetid://18865373378",
+	sliderbar = "rbxassetid://18772615246",
+	sliderhead = "rbxassetid://18772834246",
+}
+
+--// Modern Animation Presets
+local AnimationPresets = {
+	Smooth = TweenInfo.new(0.3, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out),
+	Fast = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+	Slow = TweenInfo.new(0.5, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut),
+	Bounce = TweenInfo.new(0.4, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out),
+}
+
+--// Functions
+local function GetGui()
+	local newGui = Instance.new("ScreenGui")
+	newGui.ScreenInsets = Enum.ScreenInsets.None
+	newGui.ResetOnSpawn = false
+	newGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	newGui.DisplayOrder = 2147483647
+
+	local parent = RunService:IsStudio() 
+		and LocalPlayer:FindFirstChild("PlayerGui")
+		or (gethui and gethui())
+		or (cloneref and cloneref(Meow.GetService("CoreGui")) or Meow.GetService("CoreGui"))
+
+	newGui.Parent = parent
+	return newGui
+end
+
+local function Tween(instance, tweeninfo, propertytable)
+	return TweenService:Create(instance, tweeninfo, propertytable)
+end
+
+--// Library Functions
+function Meow:Window(Settings)
+	local WindowFunctions = {Settings = Settings}
+	if Settings.AcrylicBlur ~= nil then
+		acrylicBlur = Settings.AcrylicBlur
+	else
+		acrylicBlur = true
+	end
+
+	local meow = GetGui()
+
+	local notifications = Instance.new("Frame")
+	notifications.Name = "Notifications"
+	notifications.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	notifications.BackgroundTransparency = 1
+	notifications.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	notifications.BorderSizePixel = 0
+	notifications.Size = UDim2.fromScale(1, 1)
+	notifications.Parent = meow
+	notifications.ZIndex = 2
+
+	local notificationsUIListLayout = Instance.new("UIListLayout")
+	notificationsUIListLayout.Name = "NotificationsUIListLayout"
+	notificationsUIListLayout.Padding = UDim.new(0, 10)
+	notificationsUIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+	notificationsUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	notificationsUIListLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+	notificationsUIListLayout.Parent = notifications
+
+	local notificationsUIPadding = Instance.new("UIPadding")
+	notificationsUIPadding.Name = "NotificationsUIPadding"
+	notificationsUIPadding.PaddingBottom = UDim.new(0, 10)
+	notificationsUIPadding.PaddingLeft = UDim.new(0, 10)
+	notificationsUIPadding.PaddingRight = UDim.new(0, 10)
+	notificationsUIPadding.PaddingTop = UDim.new(0, 10)
+	notificationsUIPadding.Parent = notifications
+
+	local base = Instance.new("Frame")
+	base.Name = "Base"
+	base.AnchorPoint = Vector2.new(0.5, 0.5)
+	base.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+	base.BackgroundTransparency = Settings.AcrylicBlur and 0.08 or 0
+	base.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	base.BorderSizePixel = 0
+	base.Position = UDim2.fromScale(0.5, 0.5)
+	base.Size = Settings.Size or UDim2.fromOffset(868, 650)
+
+	local baseUIScale = Instance.new("UIScale")
+	baseUIScale.Name = "BaseUIScale"
+	baseUIScale.Parent = base
+
+	local baseUICorner = Instance.new("UICorner")
+	baseUICorner.Name = "BaseUICorner"
+	baseUICorner.CornerRadius = UDim.new(0, 12)
+	baseUICorner.Parent = base
+
+	local baseUIStroke = Instance.new("UIStroke")
+	baseUIStroke.Name = "BaseUIStroke"
+	baseUIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	baseUIStroke.Color = Color3.fromRGB(80, 80, 80)
+	baseUIStroke.Transparency = 0.85
+	baseUIStroke.Thickness = 1
+	baseUIStroke.Parent = base
+
+	local sidebar = Instance.new("Frame")
+	sidebar.Name = "Sidebar"
+	sidebar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	sidebar.BackgroundTransparency = 1
+	sidebar.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	sidebar.BorderSizePixel = 0
+	sidebar.Position = UDim2.fromScale(-3.52e-08, 4.69e-08)
+	sidebar.Size = UDim2.fromScale(0.325, 1)
+
+	local divider = Instance.new("Frame")
+	divider.Name = "Divider"
+	divider.AnchorPoint = Vector2.new(1, 0)
+	divider.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	divider.BackgroundTransparency = 0.8
+	divider.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	divider.BorderSizePixel = 0
+	divider.Position = UDim2.fromScale(1, 0)
+	divider.Size = UDim2.new(0, 1, 1, 0)
+	divider.Parent = sidebar
+
+	local dividerInteract = Instance.new("TextButton")
+	dividerInteract.Name = "DividerInteract"
+	dividerInteract.AnchorPoint = Vector2.new(0.5, 0)
+	dividerInteract.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	dividerInteract.BackgroundTransparency = 1
+	dividerInteract.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	dividerInteract.BorderSizePixel = 0
+	dividerInteract.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json")
+	dividerInteract.Position = UDim2.fromScale(0.5, 0)
+	dividerInteract.Size = UDim2.new(1, 6, 1, 0)
+	dividerInteract.Text = ""
+	dividerInteract.TextColor3 = Color3.fromRGB(0, 0, 0)
+	dividerInteract.TextSize = 14
+	dividerInteract.Parent = divider
+
+	local windowControls = Instance.new("Frame")
+	windowControls.Name = "WindowControls"
+	windowControls.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	windowControls.BackgroundTransparency = 1
+	windowControls.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	windowControls.BorderSizePixel = 0
+	windowControls.Size = UDim2.new(1, 0, 0, 31)
+
+	local controls = Instance.new("Frame")
+	controls.Name = "Controls"
+	controls.BackgroundColor3 = Color3.fromRGB(119, 174, 94)
+	controls.BackgroundTransparency = 1
+	controls.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	controls.BorderSizePixel = 0
+	controls.Size = UDim2.fromScale(1, 1)
+
+	local uIListLayout = Instance.new("UIListLayout")
+	uIListLayout.Name = "UIListLayout"
+	uIListLayout.Padding = UDim.new(0, 5)
+	uIListLayout.FillDirection = Enum.FillDirection.Horizontal
+	uIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	uIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	uIListLayout.Parent = controls
+
+	local uIPadding = Instance.new("UIPadding")
+	uIPadding.Name = "UIPadding"
+	uIPadding.PaddingLeft = UDim.new(0, 11)
+	uIPadding.Parent = controls
+
+	local windowControlSettings = {
+		sizes = { enabled = UDim2.fromOffset(8, 8), disabled = UDim2.fromOffset(7, 7) },
+		transparencies = { enabled = 0, disabled = 1 },
+		strokeTransparency = 0.9,
+	}
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Name = "BaseUIStroke"
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.Color = Color3.fromRGB(255, 255, 255)
+	stroke.Transparency = windowControlSettings.strokeTransparency
+
+	local exit = Instance.new("TextButton")
+	exit.Name = "Exit"
+	exit.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json")
+	exit.Text = ""
+	exit.TextColor3 = Color3.fromRGB(0, 0, 0)
+	exit.TextSize = 14
+	exit.AutoButtonColor = false
+	exit.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+	exit.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	exit.BorderSizePixel = 0
+
+	local uICorner = Instance.new("UICorner")
+	uICorner.Name = "UICorner"
+	uICorner.CornerRadius = UDim.new(1, 0)
+	uICorner.Parent = exit
+
+	exit.Parent = controls
+
+	local minimize = Instance.new("TextButton")
+	minimize.Name = "Minimize"
+	minimize.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json")
+	minimize.Text = ""
+	minimize.TextColor3 = Color3.fromRGB(0, 0, 0)
+	minimize.TextSize = 14
+	minimize.AutoButtonColor = false
+	minimize.BackgroundColor3 = Color3.fromRGB(255, 200, 70)
+	minimize.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	minimize.BorderSizePixel = 0
+	minimize.LayoutOrder = 1
+
+	local uICorner1 = Instance.new("UICorner")
+	uICorner1.Name = "UICorner"
+	uICorner1.CornerRadius = UDim.new(1, 0)
+	uICorner1.Parent = minimize
+
+	minimize.Parent = controls
+
+	local maximize = Instance.new("TextButton")
+	maximize.Name = "Maximize"
+	maximize.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json")
+	maximize.Text = ""
+	maximize.TextColor3 = Color3.fromRGB(0, 0, 0)
+	maximize.TextSize = 14
+	maximize.AutoButtonColor = false
+	maximize.BackgroundColor3 = Color3.fromRGB(100, 200, 100)
+	maximize.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	maximize.BorderSizePixel = 0
+	maximize.LayoutOrder = 1
+
+	local uICorner2 = Instance.new("UICorner")
+	uICorner2.Name = "UICorner"
+	uICorner2.CornerRadius = UDim.new(1, 0)
+	uICorner2.Parent = maximize
+
+	maximize.Parent = controls
+
+	local function applyState(button, enabled)
+		local size = enabled and windowControlSettings.sizes.enabled or windowControlSettings.sizes.disabled
+		local transparency = enabled and windowControlSettings.transparencies.enabled or windowControlSettings.transparencies.disabled
+
+		button.Size = size
+		button.BackgroundTransparency = transparency
+		button.Active = enabled
+		button.Interactable = enabled
+
+		for _, child in ipairs(button:GetChildren()) do
+			if child:IsA("UIStroke") then
+				child.Transparency = transparency
+			end
+		end
+		if not enabled then
+			stroke:Clone().Parent = button
+		end
+	end
+
+	applyState(maximize, false)
+
+	local controlsList = {exit, minimize}
+	for _, button in pairs(controlsList) do
+		local buttonName = button.Name
+		local isEnabled = true
+
+		if Settings.DisabledWindowControls and table.find(Settings.DisabledWindowControls, buttonName) then
+			isEnabled = false
+		end
+
+		applyState(button, isEnabled)
+	end
+
+	controls.Parent = windowControls
+
+	local divider1 = Instance.new("Frame")
+	divider1.Name = "Divider"
+	divider1.AnchorPoint = Vector2.new(0, 1)
+	divider1.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	divider1.BackgroundTransparency = 0.8
+	divider1.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	divider1.BorderSizePixel = 0
+	divider1.Position = UDim2.fromScale(0, 1)
+	divider1.Size = UDim2.new(1, 0, 0, 1)
+	divider1.Parent = windowControls
+
+	windowControls.Parent = sidebar
+
+	local information = Instance.new("Frame")
+	information.Name = "Information"
+	information.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	information.BackgroundTransparency = 1
+	information.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	information.BorderSizePixel = 0
+	information.Position = UDim2.fromOffset(0, 31)
+	information.Size = UDim2.new(1, 0, 0, 60)
+
+	local divider2 = Instance.new("Frame")
+	divider2.Name = "Divider"
+	divider2.AnchorPoint = Vector2.new(0, 1)
+	divider2.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	divider2.BackgroundTransparency = 0.8
+	divider2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	divider2.BorderSizePixel = 0
+	divider2.Position = UDim2.fromScale(0, 1)
+	divider2.Size = UDim2.new(1, 0, 0, 1)
+	divider2.Parent = information
+
+	local informationHolder = Instance.new("Frame")
+	informationHolder.Name = "InformationHolder"
+	informationHolder.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	informationHolder.BackgroundTransparency = 1
+	informationHolder.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	informationHolder.BorderSizePixel = 0
+	informationHolder.Size = UDim2.fromScale(1, 1)
+
+	local informationHolderUIPadding = Instance.new("UIPadding")
+	informationHolderUIPadding.Name = "InformationHolderUIPadding"
+	informationHolderUIPadding.PaddingBottom = UDim.new(0, 10)
+	informationHolderUIPadding.PaddingLeft = UDim.new(0, 23)
+	informationHolderUIPadding.PaddingRight = UDim.new(0, 22)
+	informationHolderUIPadding.PaddingTop = UDim.new(0, 10)
+	informationHolderUIPadding.Parent = informationHolder
+
+	local globalSettingsButton = Instance.new("ImageButton")
+	globalSettingsButton.Name = "GlobalSettingsButton"
+	globalSettingsButton.Image = assets.globe
+	globalSettingsButton.ImageTransparency = 0.6
+	globalSettingsButton.AnchorPoint = Vector2.new(1, 0.5)
+	globalSettingsButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	globalSettingsButton.BackgroundTransparency = 1
+	globalSettingsButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	globalSettingsButton.BorderSizePixel = 0
+	globalSettingsButton.Position = UDim2.fromScale(1, 0.5)
+	globalSettingsButton.Size = UDim2.fromOffset(16,16)
+	globalSettingsButton.Parent = informationHolder
+
+	local function ChangeGlobalSettingsButtonState(State)
+		if State == "Default" then
+			Tween(globalSettingsButton, AnimationPresets.Fast, {
+				ImageTransparency = 0.6
+			}):Play()
+		elseif State == "Hover" then
+			Tween(globalSettingsButton, AnimationPresets.Fast, {
+				ImageTransparency = 0.2
+			}):Play()
+		end
+	end
+
+	globalSettingsButton.MouseEnter:Connect(function()
+		ChangeGlobalSettingsButtonState("Hover")
+	end)
+	globalSettingsButton.MouseLeave:Connect(function()
+		ChangeGlobalSettingsButtonState("Default")
+	end)
+
+	local titleFrame = Instance.new("Frame")
+	titleFrame.Name = "TitleFrame"
+	titleFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	titleFrame.BackgroundTransparency = 1
+	titleFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	titleFrame.BorderSizePixel = 0
+	titleFrame.Size = UDim2.fromScale(1, 1)
+
+	local title = Instance.new("TextLabel")
+	title.Name = "Title"
+	title.FontFace = Font.new(
+		assets.interFont,
+		Enum.FontWeight.Bold,
+		Enum.FontStyle.Normal
+	)
+	title.Text = Settings.Title
+	title.TextColor3 = Color3.fromRGB(255, 255, 255)
+	title.RichText = true
+	title.TextSize = 18
+	title.TextTransparency = 0
+	title.TextTruncate = Enum.TextTruncate.SplitWord
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.TextYAlignment = Enum.TextYAlignment.Top
+	title.AutomaticSize = Enum.AutomaticSize.Y
+	title.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	title.BackgroundTransparency = 1
+	title.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	title.BorderSizePixel = 0
+	title.Size = UDim2.new(1, -20, 0, 0)
+	title.Parent = titleFrame
+
+	local subtitle = Instance.new("TextLabel")
+	subtitle.Name = "Subtitle"
+	subtitle.FontFace = Font.new(
+		assets.interFont,
+		Enum.FontWeight.Medium,
+		Enum.FontStyle.Normal
+	)
+	subtitle.RichText = true
+	subtitle.Text = Settings.Subtitle
+	subtitle.RichText = true
+	subtitle.TextColor3 = Color3.fromRGB(200, 200, 200)
+	subtitle.TextSize = 12
+	subtitle.TextTransparency = 0.4
+	subtitle.TextTruncate = Enum.TextTruncate.SplitWord
+	subtitle.TextXAlignment = Enum.TextXAlignment.Left
+	subtitle.TextYAlignment = Enum.TextYAlignment.Top
+	subtitle.AutomaticSize = Enum.AutomaticSize.Y
+	subtitle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	subtitle.BackgroundTransparency = 1
+	subtitle.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	subtitle.BorderSizePixel = 0
+	subtitle.LayoutOrder = 1
+	subtitle.Size = UDim2.new(1, -20, 0, 0)
+	subtitle.Parent = titleFrame
+
+	local titleFrameUIListLayout = Instance.new("UIListLayout")
+	titleFrameUIListLayout.Name = "TitleFrameUIListLayout"
+	titleFrameUIListLayout.Padding = UDim.new(0, 3)
+	titleFrameUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	titleFrameUIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	titleFrameUIListLayout.Parent = titleFrame
+
+	titleFrame.Parent = informationHolder
+
+	informationHolder.Parent = information
+
+	information.Parent = sidebar
+
+	local sidebarGroup = Instance.new("Frame")
+	sidebarGroup.Name = "SidebarGroup"
+	sidebarGroup.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	sidebarGroup.BackgroundTransparency = 1
+	sidebarGroup.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	sidebarGroup.BorderSizePixel = 0
+	sidebarGroup.Position = UDim2.fromOffset(0, 91)
+	sidebarGroup.Size = UDim2.new(1, 0, 1, -91)
+
+	local userInfo = Instance.new("Frame")
+	userInfo.Name = "UserInfo"
+	userInfo.AnchorPoint = Vector2.new(0, 1)
+	userInfo.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	userInfo.BackgroundTransparency = 1
+	userInfo.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	userInfo.BorderSizePixel = 0
+	userInfo.Position = UDim2.fromScale(0, 1)
+	userInfo.Size = UDim2.new(1, 0, 0, 107)
+
+	local informationGroup = Instance.new("Frame")
+	informationGroup.Name = "InformationGroup"
+	informationGroup.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	informationGroup.BackgroundTransparency = 1
+	informationGroup.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	informationGroup.BorderSizePixel = 0
+	informationGroup.Size = UDim2.fromScale(1, 1)
+
+	local informationGroupUIPadding = Instance.new("UIPadding")
+	informationGroupUIPadding.Name = "InformationGroupUIPadding"
+	informationGroupUIPadding.PaddingBottom = UDim.new(0, 17)
+	informationGroupUIPadding.PaddingLeft = UDim.new(0, 25)
+	informationGroupUIPadding.Parent = informationGroup
+
+	local informationGroupUIListLayout = Instance.new("UIListLayout")
+	informationGroupUIListLayout.Name = "InformationGroupUIListLayout"
+	informationGroupUIListLayout.FillDirection = Enum.FillDirection.Horizontal
+	informationGroupUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	informationGroupUIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	informationGroupUIListLayout.Parent = informationGroup
+
+	local userId = LocalPlayer.UserId
+	local thumbType = Enum.ThumbnailType.AvatarBust
+	local thumbSize = Enum.ThumbnailSize.Size48x48
+	local headshotImage, isReady = Players:GetUserThumbnailAsync(userId, thumbType, thumbSize)
+
+	local headshot = Instance.new("ImageLabel")
+	headshot.Name = "Headshot"
+	headshot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	headshot.BackgroundTransparency = 1
+	headshot.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	headshot.BorderSizePixel = 0
+	headshot.Size = UDim2.fromOffset(32, 32)
+	headshot.Image = (isReady and headshotImage) or "rbxassetid://0"
+
+	local uICorner3 = Instance.new("UICorner")
+	uICorner3.Name = "UICorner"
+	uICorner3.CornerRadius = UDim.new(1, 0)
+	uICorner3.Parent = headshot
+
+	local baseUIStroke2 = Instance.new("UIStroke")
+	baseUIStroke2.Name = "BaseUIStroke"
+	baseUIStroke2.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	baseUIStroke2.Color = Color3.fromRGB(80, 80, 80)
+	baseUIStroke2.Transparency = 0.7
+	baseUIStroke2.Parent = headshot
+
+	headshot.Parent = informationGroup
+
+	local userAndDisplayFrame = Instance.new("Frame")
+	userAndDisplayFrame.Name = "UserAndDisplayFrame"
+	userAndDisplayFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	userAndDisplayFrame.BackgroundTransparency = 1
+	userAndDisplayFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	userAndDisplayFrame.BorderSizePixel = 0
+	userAndDisplayFrame.LayoutOrder = 1
+	userAndDisplayFrame.Size = UDim2.new(1, -42, 0, 32)
+
+	local displayName = Instance.new("TextLabel")
+	displayName.Name = "DisplayName"
+	displayName.FontFace = Font.new(
+		assets.interFont,
+		Enum.FontWeight.SemiBold,
+		Enum.FontStyle.Normal
+	)
+	displayName.Text = LocalPlayer.DisplayName
+	displayName.TextColor3 = Color3.fromRGB(255, 255, 255)
+	displayName.TextSize = 13
+	displayName.TextTransparency = 0
+	displayName.TextTruncate = Enum.TextTruncate.SplitWord
+	displayName.TextXAlignment = Enum.TextXAlignment.Left
+	displayName.TextYAlignment = Enum.TextYAlignment.Top
+	displayName.AutomaticSize = Enum.AutomaticSize.XY
+	displayName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	displayName.BackgroundTransparency = 1
+	displayName.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	displayName.BorderSizePixel = 0
+	displayName.Parent = userAndDisplayFrame
+	displayName.Size = UDim2.fromScale(1,0)
+
+	local userAndDisplayFrameUIPadding = Instance.new("UIPadding")
+	userAndDisplayFrameUIPadding.Name = "UserAndDisplayFrameUIPadding"
+	userAndDisplayFrameUIPadding.PaddingLeft = UDim.new(0, 8)
+	userAndDisplayFrameUIPadding.PaddingTop = UDim.new(0, 3)
+	userAndDisplayFrameUIPadding.Parent = userAndDisplayFrame
+
+	local userAndDisplayFrameUIListLayout = Instance.new("UIListLayout")
+	userAndDisplayFrameUIListLayout.Name = "UserAndDisplayFrameUIListLayout"
+	userAndDisplayFrameUIListLayout.Padding = UDim.new(0, 1)
+	userAndDisplayFrameUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	userAndDisplayFrameUIListLayout.Parent = userAndDisplayFrame
+
+	local username = Instance.new("TextLabel")
+	username.Name = "Username"
+	username.FontFace = Font.new(
+		assets.interFont,
+		Enum.FontWeight.SemiBold,
+		Enum.FontStyle.Normal
+	)
+	username.Text = "@" .. LocalPlayer.Name
+	username.TextColor3 = Color3.fromRGB(200, 200, 200)
+	username.TextSize = 12
+	username.TextTransparency = 0.3
+	username.TextTruncate = Enum.TextTruncate.SplitWord
+	username.TextXAlignment = Enum.TextXAlignment.Left
+	username.TextYAlignment = Enum.TextYAlignment.Top
+	username.AutomaticSize = Enum.AutomaticSize.XY
+	username.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	username.BackgroundTransparency = 1
+	username.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	username.BorderSizePixel = 0
+	username.LayoutOrder = 1
+	username.Parent = userAndDisplayFrame
+	username.Size = UDim2.fromScale(1,0)
+
+	userAndDisplayFrame.Parent = informationGroup
+
+	informationGroup.Parent = userInfo
+
+	local userInfoUIPadding = Instance.new("UIPadding")
+	userInfoUIPadding.Name = "UserInfoUIPadding"
+	userInfoUIPadding.PaddingLeft = UDim.new(0, 10)
+	userInfoUIPadding.PaddingRight = UDim.new(0, 10)
+	userInfoUIPadding.Parent = userInfo
+
+	userInfo.Parent = sidebarGroup
+
+	local sidebarGroupUIPadding = Instance.new("UIPadding")
+	sidebarGroupUIPadding.Name = "SidebarGroupUIPadding"
+	sidebarGroupUIPadding.PaddingLeft = UDim.new(0, 10)
+	sidebarGroupUIPadding.PaddingRight = UDim.new(0, 10)
+	sidebarGroupUIPadding.PaddingTop = UDim.new(0, 31)
+	sidebarGroupUIPadding.Parent = sidebarGroup
+
+	local tabSwitchers = Instance.new("Frame")
+	tabSwitchers.Name = "TabSwitchers"
+	tabSwitchers.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	tabSwitchers.BackgroundTransparency = 1
+	tabSwitchers.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	tabSwitchers.BorderSizePixel = 0
+	tabSwitchers.Size = UDim2.new(1, 0, 1, -107)
+
+	local tabSwitchersScrollingFrame = Instance.new("ScrollingFrame")
+	tabSwitchersScrollingFrame.Name = "TabSwitchersScrollingFrame"
+	tabSwitchersScrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	tabSwitchersScrollingFrame.BottomImage = ""
+	tabSwitchersScrollingFrame.CanvasSize = UDim2.new()
+	tabSwitchersScrollingFrame.ScrollBarImageTransparency = 0.8
+	tabSwitchersScrollingFrame.ScrollBarThickness = 1
+	tabSwitchersScrollingFrame.TopImage = ""
+	tabSwitchersScrollingFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	tabSwitchersScrollingFrame.BackgroundTransparency = 1
+	tabSwitchersScrollingFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	tabSwitchersScrollingFrame.BorderSizePixel = 0
+	tabSwitchersScrollingFrame.Size = UDim2.fromScale(1, 1)
+
+	local tabSwitchersScrollingFrameUIListLayout = Instance.new("UIListLayout")
+	tabSwitchersScrollingFrameUIListLayout.Name = "TabSwitchersScrollingFrameUIListLayout"
+	tabSwitchersScrollingFrameUIListLayout.Padding = UDim.new(0, 17)
+	tabSwitchersScrollingFrameUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	tabSwitchersScrollingFrameUIListLayout.Parent = tabSwitchersScrollingFrame
+
+	local tabSwitchersScrollingFrameUIPadding = Instance.new("UIPadding")
+	tabSwitchersScrollingFrameUIPadding.Name = "TabSwitchersScrollingFrameUIPadding"
+	tabSwitchersScrollingFrameUIPadding.PaddingTop = UDim.new(0, 2)
+	tabSwitchersScrollingFrameUIPadding.Parent = tabSwitchersScrollingFrame
+
+	tabSwitchersScrollingFrame.Parent = tabSwitchers
+
+	tabSwitchers.Parent = sidebarGroup
+
+	sidebarGroup.Parent = sidebar
+
+	sidebar.Parent = base
+
+	local content = Instance.new("Frame")
+	content.Name = "Content"
+	content.AnchorPoint = Vector2.new(1, 0)
+	content.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	content.BackgroundTransparency = 1
+	content.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	content.BorderSizePixel = 0
+	content.Position = UDim2.fromScale(1, 4.69e-08)
+	content.Size = UDim2.new(0, (base.AbsoluteSize.X - sidebar.AbsoluteSize.X), 1, 0)
+
+	local resizingContent = false
+	local defaultSidebarWidth = sidebar.AbsoluteSize.X
+	local initialMouseX, initialSidebarWidth
+	local snapRange = 20
+	local minSidebarWidth = 107
+	local maxSidebarWidth = base.AbsoluteSize.X - minSidebarWidth
+
+	local TweenSettings = {
+		DefaultTransparency = 0.8,
+		HoverTransparency = 0.6,
+		EasingStyle = Enum.EasingStyle.Quad
+	}
+
+	local function ChangeState(State)
+		Tween(divider, TweenInfo.new(0.2, TweenSettings.EasingStyle), {
+			BackgroundTransparency = State == "Idle" and TweenSettings.DefaultTransparency or TweenSettings.HoverTransparency
+		}):Play()  
+	end
+
+	dividerInteract.MouseEnter:Connect(function()
+		ChangeState("Hover")
+	end)
+	dividerInteract.MouseLeave:Connect(function()
+		ChangeState("Idle")
+	end)
+
+	dividerInteract.MouseButton1Down:Connect(function()
+		resizingContent = true
+		initialMouseX = UserInputService:GetMouseLocation().X
+		initialSidebarWidth = sidebar.AbsoluteSize.X
+	end)
+
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			resizingContent = false
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if resizingContent and input.UserInputType == Enum.UserInputType.MouseMovement then
+			local deltaX = UserInputService:GetMouseLocation().X - initialMouseX
+			local newSidebarWidth = initialSidebarWidth + deltaX
+
+			if math.abs(newSidebarWidth - defaultSidebarWidth) < snapRange then
+				newSidebarWidth = defaultSidebarWidth
+			else
+				newSidebarWidth = math.clamp(newSidebarWidth, minSidebarWidth, maxSidebarWidth)
+			end
+
+			sidebar.Size = UDim2.new(0, newSidebarWidth, 1, 0)
+			content.Size = UDim2.new(0, base.AbsoluteSize.X - newSidebarWidth, 1, 0)
+		end
+	end)
+
+	local topbar = Instance.new("Frame")
+	topbar.Name = "Topbar"
+	topbar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	topbar.BackgroundTransparency = 1
+	topbar.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	topbar.BorderSizePixel = 0
+	topbar.Size = UDim2.new(1, 0, 0, 63)
+
+	local divider4 = Instance.new("Frame")
+	divider4.Name = "Divider"
+	divider4.AnchorPoint = Vector2.new(0, 1)
+	divider4.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	divider4.BackgroundTransparency = 0.8
+	divider4.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	divider4.BorderSizePixel = 0
+	divider4.Position = UDim2.fromScale(0, 1)
+	divider4.Size = UDim2.new(1, 0, 0, 1)
+	divider4.Parent = topbar
+
+	local elements = Instance.new("Frame")
+	elements.Name = "Elements"
+	elements.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	elements.BackgroundTransparency = 1
+	elements.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	elements.BorderSizePixel = 0
+	elements.Size = UDim2.fromScale(1, 1)
+
+	local uIPadding2 = Instance.new("UIPadding")
+	uIPadding2.Name = "UIPadding"
+	uIPadding2.PaddingLeft = UDim.new(0, 20)
+	uIPadding2.PaddingRight = UDim.new(0, 20)
+	uIPadding2.Parent = elements
+
+	local moveIcon = Instance.new("ImageButton")
+	moveIcon.Name = "MoveIcon"
+	moveIcon.Image = assets.transform
+	moveIcon.ImageTransparency = 0.7
+	moveIcon.AnchorPoint = Vector2.new(1, 0.5)
+	moveIcon.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	moveIcon.BackgroundTransparency = 1
+	moveIcon.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	moveIcon.BorderSizePixel = 0
+	moveIcon.Position = UDim2.fromScale(1, 0.5)
+	moveIcon.Size = UDim2.fromOffset(15, 15)
+	moveIcon.Parent = elements
+	moveIcon.Visible = not Settings.DragStyle or Settings.DragStyle == 1
+
+	local interact = Instance.new("TextButton")
+	interact.Name = "Interact"
+	interact.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json")
+	interact.Text = ""
+	interact.TextColor3 = Color3.fromRGB(0, 0, 0)
+	interact.TextSize = 14
+	interact.AnchorPoint = Vector2.new(0.5, 0.5)
+	interact.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	interact.BackgroundTransparency = 1
+	interact.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	interact.BorderSizePixel = 0
+	interact.Position = UDim2.fromScale(0.5, 0.5)
+	interact.Size = UDim2.fromOffset(40, 40)
+	interact.Parent = moveIcon
+
+	local function ChangemoveIconState(State)
+		if State == "Default" then
+			Tween(moveIcon, AnimationPresets.Fast, {
+				ImageTransparency = 0.7
+			}):Play()
+		elseif State == "Hover" then
+			Tween(moveIcon, AnimationPresets.Fast, {
+				ImageTransparency = 0.3
+			}):Play()
+		end
+	end
+
+	interact.MouseEnter:Connect(function()
+		ChangemoveIconState("Hover")
+	end)
+	interact.MouseLeave:Connect(function()
+		ChangemoveIconState("Default")
+	end)
+
+	local dragging_ = false
+	local dragInput
+	local dragStart
+	local startPos
+
+	local function update(input)
+		local delta = input.Position - dragStart
+		base.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
+
+	local function onDragStart(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging_ = true
+			dragStart = input.Position
+			startPos = base.Position
+
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging_ = false
+				end
+			end)
+		end
+	end
+
+	local function onDragUpdate(input)
+		if dragging_ and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			dragInput = input
+		end
+	end
+
+	if not Settings.DragStyle or Settings.DragStyle == 1 then
+		interact.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				onDragStart(input)
+			end
+		end)
+
+		interact.InputChanged:Connect(onDragUpdate)
+
+		UserInputService.InputChanged:Connect(function(input)
+			if input == dragInput and dragging_ then
+				update(input)
+			end
+		end)
+
+		interact.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				dragging_ = false
+			end
+		end)
+	elseif Settings.DragStyle == 2 then
+		base.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				onDragStart(input)
+			end
+		end)
+
+		base.InputChanged:Connect(onDragUpdate)
+
+		UserInputService.InputChanged:Connect(function(input)
+			if input == dragInput and dragging_ then
+				update(input)
+			end
+		end)
+
+		base.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				dragging_ = false
+			end
+		end)
+	end
+
+	local currentTab = Instance.new("TextLabel")
+	currentTab.Name = "CurrentTab"
+	currentTab.FontFace = Font.new(assets.interFont, Enum.FontWeight.Medium)
+	currentTab.RichText = true
+	currentTab.Text = ""
+	currentTab.RichText = true
+	currentTab.TextColor3 = Color3.fromRGB(200, 200, 200)
+	currentTab.TextSize = 14
+	currentTab.TextTransparency = 0.3
+	currentTab.TextTruncate = Enum.TextTruncate.SplitWord
+	currentTab.TextXAlignment = Enum.TextXAlignment.Left
+	currentTab.TextYAlignment = Enum.TextYAlignment.Top
+	currentTab.AnchorPoint = Vector2.new(0, 0.5)
+	currentTab.AutomaticSize = Enum.AutomaticSize.Y
+	currentTab.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	currentTab.BackgroundTransparency = 1
+	currentTab.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	currentTab.BorderSizePixel = 0
+	currentTab.Position = UDim2.fromScale(0, 0.5)
+	currentTab.Size = UDim2.fromScale(0.9, 0)
+	currentTab.Parent = elements
+
+	elements.Parent = topbar
+
+	topbar.Parent = content
+
+	content.Parent = base
+
+	local globalSettings = Instance.new("Frame")
+	globalSettings.Name = "GlobalSettings"
+	globalSettings.AutomaticSize = Enum.AutomaticSize.XY
+	globalSettings.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+	globalSettings.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	globalSettings.BorderSizePixel = 0
+	globalSettings.Position = UDim2.fromScale(0.298, 0.104)
+
+	local globalSettingsUIStroke = Instance.new("UIStroke")
+	globalSettingsUIStroke.Name = "GlobalSettingsUIStroke"
+	globalSettingsUIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	globalSettingsUIStroke.Color = Color3.fromRGB(80, 80, 80)
+	globalSettingsUIStroke.Transparency = 0.85
+	globalSettingsUIStroke.Parent = globalSettings
+
+	local globalSettingsUICorner = Instance.new("UICorner")
+	globalSettingsUICorner.Name = "GlobalSettingsUICorner"
+	globalSettingsUICorner.CornerRadius = UDim.new(0, 12)
+	globalSettingsUICorner.Parent = globalSettings
+
+	local globalSettingsUIPadding = Instance.new("UIPadding")
+	globalSettingsUIPadding.Name = "GlobalSettingsUIPadding"
+	globalSettingsUIPadding.PaddingBottom = UDim.new(0, 10)
+	globalSettingsUIPadding.PaddingTop = UDim.new(0, 10)
+	globalSettingsUIPadding.Parent = globalSettings
+
+	local globalSettingsUIListLayout = Instance.new("UIListLayout")
+	globalSettingsUIListLayout.Name = "GlobalSettingsUIListLayout"
+	globalSettingsUIListLayout.Padding = UDim.new(0, 5)
+	globalSettingsUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	globalSettingsUIListLayout.Parent = globalSettings
+
+	local globalSettingsUIScale = Instance.new("UIScale")
+	globalSettingsUIScale.Name = "GlobalSettingsUIScale"
+	globalSettingsUIScale.Scale = 1e-07
+	globalSettingsUIScale.Parent = globalSettings
+	globalSettings.Parent = base
+	base.Parent = meow
+
+	function WindowFunctions:UpdateTitle(NewTitle)
+		title.Text = NewTitle
+	end
+
+	function WindowFunctions:UpdateSubtitle(NewSubtitle)
+		subtitle.Text = NewSubtitle
+	end
+
+	local hovering
+	local toggled = globalSettingsUIScale.Scale == 1 and true or false
+	local function toggle()
+		if not toggled then
+			local intween = Tween(globalSettingsUIScale, AnimationPresets.Smooth, {
+				Scale = 1
+			})
+			intween:Play()
+			intween.Completed:Wait()
+			toggled = true
+		elseif toggled then
+			local outtween = Tween(globalSettingsUIScale, AnimationPresets.Smooth, {
+				Scale = 0
+			})
+			outtween:Play()
+			outtween.Completed:Wait()
+			toggled = false
+		end
+	end
+	globalSettingsButton.MouseButton1Click:Connect(function()
+		if not hasGlobalSetting then return end
+		toggle()
+	end)
+	globalSettings.MouseEnter:Connect(function()
+		hovering = true
+	end)
+	globalSettings.MouseLeave:Connect(function()
+		hovering = false
+	end)
+	UserInputService.InputEnded:Connect(function(inp)
+		if inp.UserInputType == Enum.UserInputType.MouseButton1 and toggled and not hovering then
+			toggle()
+		end
+	end)
+
+	local BlurTarget = base
+
+	local HS = HttpService
+	local camera = workspace.CurrentCamera
+	local MTREL = "Glass"
+	local binds = {}
+	local wedgeguid = HS:GenerateGUID(true)
+
+	local DepthOfField
+
+	for _,v in pairs(Lighting:GetChildren()) do
+		if not v:IsA("DepthOfFieldEffect") and v:HasTag(".") then
+			DepthOfField = Instance.new('DepthOfFieldEffect')
+			DepthOfField.FarIntensity = 0
+			DepthOfField.FocusDistance = 51.6
+			DepthOfField.InFocusRadius = 50
+			DepthOfField.NearIntensity = 1
+			DepthOfField.Name = HS:GenerateGUID(true)
+			DepthOfField:AddTag(".")
+		elseif v:IsA("DepthOfFieldEffect") and v:HasTag(".") then
+			DepthOfField = v
+		end
+	end
+
+	if not DepthOfField then
+		DepthOfField = Instance.new('DepthOfFieldEffect')
+		DepthOfField.FarIntensity = 0
+		DepthOfField.FocusDistance = 51.6
+		DepthOfField.InFocusRadius = 50
+		DepthOfField.NearIntensity = 1
+		DepthOfField.Name = HS:GenerateGUID(true)
+		DepthOfField:AddTag(".")
+	end
+
+	local frame = Instance.new('Frame')
+	frame.Parent = BlurTarget
+	frame.Size = UDim2.new(0.97, 0, 0.97, 0)
+	frame.Position = UDim2.new(0.5, 0, 0.5, 0)
+	frame.AnchorPoint = Vector2.new(0.5, 0.5)
+	frame.BackgroundTransparency = 1
+	frame.Name = HS:GenerateGUID(true)
+
+	do
+		local function IsNotNaN(x)
+			return x == x
+		end
+		local continue = IsNotNaN(camera:ScreenPointToRay(0,0).Origin.x)
+		while not continue do
+			RunService.RenderStepped:Wait()
+			continue = IsNotNaN(camera:ScreenPointToRay(0,0).Origin.x)
+		end
+	end
+
+	local DrawQuad; do
+		local acos, max, pi, sqrt = math.acos, math.max, math.pi, math.sqrt
+		local sz = 0.2
+
+		local function DrawTriangle(v1, v2, v3, p0, p1)
+			local s1 = (v1 - v2).magnitude
+			local s2 = (v2 - v3).magnitude
+			local s3 = (v3 - v1).magnitude
+			local smax = max(s1, s2, s3)
+			local A, B, C
+			if s1 == smax then
+				A, B, C = v1, v2, v3
+			elseif s2 == smax then
+				A, B, C = v2, v3, v1
+			elseif s3 == smax then
+				A, B, C = v3, v1, v2
+			end
+
+			local para = ( (B-A).x*(C-A).x + (B-A).y*(C-A).y + (B-A).z*(C-A).z ) / (A-B).magnitude
+			local perp = sqrt((C-A).magnitude^2 - para*para)
+			local dif_para = (A - B).magnitude - para
+
+			local st = CFrame.new(B, A)
+			local za = CFrame.Angles(pi/2,0,0)
+
+			local cf0 = st
+
+			local Top_Look = (cf0 * za).lookVector
+			local Mid_Point = A + CFrame.new(A, B).lookVector * para
+			local Needed_Look = CFrame.new(Mid_Point, C).lookVector
+			local dot = Top_Look.x*Needed_Look.x + Top_Look.y*Needed_Look.y + Top_Look.z*Needed_Look.z
+
+			local ac = CFrame.Angles(0, 0, acos(dot))
+
+			cf0 = cf0 * ac
+			if ((cf0 * za).lookVector - Needed_Look).magnitude > 0.01 then
+				cf0 = cf0 * CFrame.Angles(0, 0, -2*acos(dot))
+			end
+			cf0 = cf0 * CFrame.new(0, perp/2, -(dif_para + para/2))
+
+			local cf1 = st * ac * CFrame.Angles(0, pi, 0)
+			if ((cf1 * za).lookVector - Needed_Look).magnitude > 0.01 then
+				cf1 = cf1 * CFrame.Angles(0, 0, 2*acos(dot))
+			end
+			cf1 = cf1 * CFrame.new(0, perp/2, dif_para/2)
+
+			if not p0 then
+				p0 = Instance.new('Part')
+				p0.FormFactor = 'Custom'
+				p0.TopSurface = 0
+				p0.BottomSurface = 0
+				p0.Anchored = true
+				p0.CanCollide = false
+				p0.CastShadow = false
+				p0.Material = MTREL
+				p0.Size = Vector3.new(sz, sz, sz)
+				p0.Name = HS:GenerateGUID(true)
+				local mesh = Instance.new('SpecialMesh', p0)
+				mesh.MeshType = 2
+				mesh.Name = wedgeguid
+			end
+			p0[wedgeguid].Scale = Vector3.new(0, perp/sz, para/sz)
+			p0.CFrame = cf0
+
+			if not p1 then
+				p1 = p0:clone()
+			end
+			p1[wedgeguid].Scale = Vector3.new(0, perp/sz, dif_para/sz)
+			p1.CFrame = cf1
+
+			return p0, p1
+		end
+
+		function DrawQuad(v1, v2, v3, v4, parts)
+			parts[1], parts[2] = DrawTriangle(v1, v2, v3, parts[1], parts[2])
+			parts[3], parts[4] = DrawTriangle(v3, v2, v4, parts[3], parts[4])
+		end
+	end
+
+	if binds[frame] then
+		return binds[frame].parts
+	end
+
+	local parts = {}
+
+	local parents = {}
+	do
+		local function add(child)
+			if child:IsA'GuiObject' then
+				parents[#parents + 1] = child
+				add(child.Parent)
+			end
+		end
+		add(frame)
+	end
+
+	local function IsVisible(instance)
+		while instance do
+			if instance:IsA("GuiObject") then
+				if not instance.Visible then
+					return false
+				end
+			elseif instance:IsA("ScreenGui") then
+				if not instance.Enabled then
+					return false
+				end
+				break
+			end
+			instance = instance.Parent
+		end
+		return true
+	end
+
+	local function UpdateOrientation(fetchProps)
+		if not IsVisible(frame) or not acrylicBlur or unloaded then
+			for _, pt in pairs(parts) do
+				pt.Parent = nil
+				DepthOfField.Enabled = false
+				DepthOfField.Parent = nil
+			end
+			return
+		end
+		if not DepthOfField.Parent then
+			DepthOfField.Parent = Lighting
+		end
+		DepthOfField.Enabled = true
+		local properties = {
+			Transparency = 0.98;
+			BrickColor = BrickColor.new('Institutional white');
+		}
+		local zIndex = 1 - 0.05*frame.ZIndex
+
+		local tl, br = frame.AbsolutePosition, frame.AbsolutePosition + frame.AbsoluteSize
+		local tr, bl = Vector2.new(br.x, tl.y), Vector2.new(tl.x, br.y)
+		do
+			local rot = 0;
+			for _, v in ipairs(parents) do
+				rot = rot + v.Rotation
+			end
+			if rot ~= 0 and rot%180 ~= 0 then
+				local mid = tl:lerp(br, 0.5)
+				local s, c = math.sin(math.rad(rot)), math.cos(math.rad(rot))
+				local vec = tl
+				tl = Vector2.new(c*(tl.x - mid.x) - s*(tl.y - mid.y), s*(tl.x - mid.x) + c*(tl.y - mid.y)) + mid
+				tr = Vector2.new(c*(tr.x - mid.x) - s*(tr.y - mid.y), s*(tr.x - mid.x) + c*(tr.y - mid.y)) + mid
+				bl = Vector2.new(c*(bl.x - mid.x) - s*(bl.y - mid.y), s*(bl.x - mid.x) + c*(bl.y - mid.y)) + mid
+				br = Vector2.new(c*(br.x - mid.x) - s*(br.y - mid.y), s*(br.x - mid.x) + c*(br.y - mid.y)) + mid
+			end
+		end
+		DrawQuad(
+			camera:ScreenPointToRay(tl.x, tl.y, zIndex).Origin, 
+			camera:ScreenPointToRay(tr.x, tr.y, zIndex).Origin, 
+			camera:ScreenPointToRay(bl.x, bl.y, zIndex).Origin, 
+			camera:ScreenPointToRay(br.x, br.y, zIndex).Origin, 
+			parts
+		)
+		if fetchProps then
+			for _, pt in pairs(parts) do
+				pt.Parent = camera
+			end
+			for propName, propValue in pairs(properties) do
+				for _, pt in pairs(parts) do
+					pt[propName] = propValue
+				end
+			end
+		end
+	end
+
+	UpdateOrientation(true)
+
+	RunService.RenderStepped:Connect(UpdateOrientation)
+
+	function WindowFunctions:GlobalSetting(Settings)
+		hasGlobalSetting = true
+		local GlobalSettingFunctions = {}
+		local globalSetting = Instance.new("TextButton")
+		globalSetting.Name = "GlobalSetting"
+		globalSetting.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json")
+		globalSetting.Text = ""
+		globalSetting.TextColor3 = Color3.fromRGB(0, 0, 0)
+		globalSetting.TextSize = 14
+		globalSetting.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		globalSetting.BackgroundTransparency = 1
+		globalSetting.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		globalSetting.BorderSizePixel = 0
+		globalSetting.Size = UDim2.fromOffset(200, 30)
+
+		local globalSettingToggleUIPadding = Instance.new("UIPadding")
+		globalSettingToggleUIPadding.Name = "GlobalSettingToggleUIPadding"
+		globalSettingToggleUIPadding.PaddingLeft = UDim.new(0, 15)
+		globalSettingToggleUIPadding.Parent = globalSetting
+
+		local settingName = Instance.new("TextLabel")
+		settingName.Name = "SettingName"
+		settingName.FontFace = Font.new(assets.interFont)
+		settingName.Text = Settings.Name
+		settingName.RichText = true
+		settingName.TextColor3 = Color3.fromRGB(255, 255, 255)
+		settingName.TextSize = 13
+		settingName.TextTransparency = 0.3
+		settingName.TextTruncate = Enum.TextTruncate.SplitWord
+		settingName.TextXAlignment = Enum.TextXAlignment.Left
+		settingName.TextYAlignment = Enum.TextYAlignment.Top
+		settingName.AnchorPoint = Vector2.new(0, 0.5)
+		settingName.AutomaticSize = Enum.AutomaticSize.Y
+		settingName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		settingName.BackgroundTransparency = 1
+		settingName.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		settingName.BorderSizePixel = 0
+		settingName.Position = UDim2.fromScale(1.3e-07, 0.5)
+		settingName.Size = UDim2.new(1,-40,0,0)
+		settingName.Parent = globalSetting
+
+		local globalSettingToggleUIListLayout = Instance.new("UIListLayout")
+		globalSettingToggleUIListLayout.Name = "GlobalSettingToggleUIListLayout"
+		globalSettingToggleUIListLayout.Padding = UDim.new(0, 10)
+		globalSettingToggleUIListLayout.FillDirection = Enum.FillDirection.Horizontal
+		globalSettingToggleUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		globalSettingToggleUIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+		globalSettingToggleUIListLayout.Parent = globalSetting
+
+		local checkmark = Instance.new("TextLabel")
+		checkmark.Name = "Checkmark"
+		checkmark.FontFace = Font.new(
+			assets.interFont,
+			Enum.FontWeight.Medium,
+			Enum.FontStyle.Normal
+		)
+		checkmark.Text = "✓"
+		checkmark.TextColor3 = Color3.fromRGB(100, 200, 100)
+		checkmark.TextSize = 13
+		checkmark.TextTransparency = 1
+		checkmark.TextXAlignment = Enum.TextXAlignment.Left
+		checkmark.TextYAlignment = Enum.TextYAlignment.Top
+		checkmark.AnchorPoint = Vector2.new(0, 0.5)
+		checkmark.AutomaticSize = Enum.AutomaticSize.Y
+		checkmark.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		checkmark.BackgroundTransparency = 1
+		checkmark.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		checkmark.BorderSizePixel = 0
+		checkmark.LayoutOrder = -1
+		checkmark.Position = UDim2.fromScale(1.3e-07, 0.5)
+		checkmark.Size = UDim2.fromOffset(-10, 0)
+		checkmark.Parent = globalSetting
+
+		globalSetting.Parent = globalSettings
+
+		local tweensettings = {
+			duration = 0.25,
+			easingStyle = Enum.EasingStyle.Exponential,
+			transparencyIn = 0,
+			transparencyOut = 0.5,
+			checkSizeIncrease = 12,
+			checkSizeDecrease = -globalSettingToggleUIListLayout.Padding.Offset,
+			waitTime = 1
+		}
+
+		local tweens = {
+			checkIn = Tween(checkmark, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle, Enum.EasingDirection.Out), {
+				Size = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeIncrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
+			}),
+			checkOut = Tween(checkmark, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle, Enum.EasingDirection.Out),{
+				Size = UDim2.new(checkmark.Size.X.Scale, tweensettings.checkSizeDecrease, checkmark.Size.Y.Scale, checkmark.Size.Y.Offset)
+			}),
+			nameIn = Tween(settingName, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle, Enum.EasingDirection.Out),{
+				TextTransparency = tweensettings.transparencyIn
+			}),
+			nameOut = Tween(settingName, TweenInfo.new(tweensettings.duration, tweensettings.easingStyle, Enum.EasingDirection.Out),{
+				TextTransparency = tweensettings.transparencyOut
+			})
+		}
+
+		local function Toggle(State)
+			if not State then
+				tweens.checkOut:Play()
+				tweens.nameOut:Play()
+				checkmark:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+					if checkmark.AbsoluteSize.X <= 0 then
+						checkmark.TextTransparency = 1
+					end
+				end)
+			else
+				tweens.checkIn:Play()
+				tweens.nameIn:Play()
+				checkmark:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+					if checkmark.AbsoluteSize.X > 0 then
+						checkmark.TextTransparency = 0
+					end
+				end)
+			end
+		end
+
+		local toggled = Settings.Default
+		Toggle(toggled)
+
+		globalSetting.MouseButton1Click:Connect(function()
+			toggled = not toggled
+			Toggle(toggled)
+
+			task.spawn(function()
+				if Settings.Callback then
+					Settings.Callback(toggled)
+				end
+			end)
+		end)
+
+		function GlobalSettingFunctions:UpdateName(NewName)
+			settingName.Text = NewName
+		end
+
+		function GlobalSettingFunctions:UpdateState(NewState)
+			Toggle(NewState)
+			toggled = NewState
+		end
+
+		return GlobalSettingFunctions
+	end
+
+	-- Krótko - kod dla TabGroup, Tab, Section itd pozostaje taki sam
+	-- ale będę dodawać ulepszenia dla każdego elementu
+
+	function WindowFunctions:TabGroup()
+		local SectionFunctions = {}
+
+		local tabGroup = Instance.new("Frame")
+		tabGroup.Name = "Section"
+		tabGroup.AutomaticSize = Enum.AutomaticSize.Y
+		tabGroup.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		tabGroup.BackgroundTransparency = 1
+		tabGroup.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		tabGroup.BorderSizePixel = 0
+		tabGroup.Size = UDim2.fromScale(1, 0)
+
+		local divider3 = Instance.new("Frame")
+		divider3.Name = "Divider"
+		divider3.AnchorPoint = Vector2.new(0.5, 1)
+		divider3.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+		divider3.BackgroundTransparency = 0.8
+		divider3.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		divider3.BorderSizePixel = 0
+		divider3.Position = UDim2.fromScale(0.5, 1)
+		divider3.Size = UDim2.new(1, -21, 0, 1)
+		divider3.Parent = tabGroup
+
+		local sectionTabSwitchers = Instance.new("Frame")
+		sectionTabSwitchers.Name = "SectionTabSwitchers"
+		sectionTabSwitchers.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		sectionTabSwitchers.BackgroundTransparency = 1
+		sectionTabSwitchers.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		sectionTabSwitchers.BorderSizePixel = 0
+		sectionTabSwitchers.Size = UDim2.fromScale(1, 1)
+
+		local uIListLayout1 = Instance.new("UIListLayout")
+		uIListLayout1.Name = "UIListLayout"
+		uIListLayout1.Padding = UDim.new(0, 15)
+		uIListLayout1.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		uIListLayout1.SortOrder = Enum.SortOrder.LayoutOrder
+		uIListLayout1.Parent = sectionTabSwitchers
+
+		local uIPadding1 = Instance.new("UIPadding")
+		uIPadding1.Name = "UIPadding"
+		uIPadding1.PaddingBottom = UDim.new(0, 15)
+		uIPadding1.Parent = sectionTabSwitchers
+
+		sectionTabSwitchers.Parent = tabGroup
+		tabGroup.Parent = tabSwitchersScrollingFrame
+
+		function SectionFunctions:Tab(Settings)
+			local TabFunctions = {Settings = Settings}
+			local tabSwitcher = Instance.new("TextButton")
+			tabSwitcher.Name = "TabSwitcher"
+			tabSwitcher.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json")
+			tabSwitcher.Text = ""
+			tabSwitcher.TextColor3 = Color3.fromRGB(0, 0, 0)
+			tabSwitcher.TextSize = 14
+			tabSwitcher.AutoButtonColor = false
+			tabSwitcher.AnchorPoint = Vector2.new(0.5, 0)
+			tabSwitcher.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			tabSwitcher.BackgroundTransparency = 1
+			tabSwitcher.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			tabSwitcher.BorderSizePixel = 0
+			tabSwitcher.Position = UDim2.fromScale(0.5, 0)
+			tabSwitcher.Size = UDim2.new(1, -21, 0, 40)
+
+			tabIndex += 1
+			tabSwitcher.LayoutOrder = tabIndex
+
+			local tabSwitcherUICorner = Instance.new("UICorner")
+			tabSwitcherUICorner.Name = "TabSwitcherUICorner"
+			tabSwitcherUICorner.CornerRadius = UDim.new(0, 8)
+			tabSwitcherUICorner.Parent = tabSwitcher
+
+			local tabSwitcherUIStroke = Instance.new("UIStroke")
+			tabSwitcherUIStroke.Name = "TabSwitcherUIStroke"
+			tabSwitcherUIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+			tabSwitcherUIStroke.Color = Color3.fromRGB(80, 80, 80)
+			tabSwitcherUIStroke.Transparency = 1
+			tabSwitcherUIStroke.Parent = tabSwitcher
+
+			local tabSwitcherUIListLayout = Instance.new("UIListLayout")
+			tabSwitcherUIListLayout.Name = "TabSwitcherUIListLayout"
+			tabSwitcherUIListLayout.Padding = UDim.new(0, 9)
+			tabSwitcherUIListLayout.FillDirection = Enum.FillDirection.Horizontal
+			tabSwitcherUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+			tabSwitcherUIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+			tabSwitcherUIListLayout.Parent = tabSwitcher
+
+			local tabImage
+
+			if Settings.Image then
+				tabImage = Instance.new("ImageLabel")
+				tabImage.Name = "TabImage"
+				tabImage.Image = Settings.Image
+				tabImage.ImageTransparency = 0.5
+				tabImage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				tabImage.BackgroundTransparency = 1
+				tabImage.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				tabImage.BorderSizePixel = 0
+				tabImage.Size = UDim2.fromOffset(18, 18)
+				tabImage.Parent = tabSwitcher
+			end
+
+			local tabSwitcherName = Instance.new("TextLabel")
+			tabSwitcherName.Name = "TabSwitcherName"
+			tabSwitcherName.FontFace = Font.new(
+				assets.interFont,
+				Enum.FontWeight.SemiBold,
+				Enum.FontStyle.Normal
+			)
+			tabSwitcherName.Text = Settings.Name
+			tabSwitcherName.RichText = true
+			tabSwitcherName.TextColor3 = Color3.fromRGB(200, 200, 200)
+			tabSwitcherName.TextSize = 14
+			tabSwitcherName.TextTransparency = 0.4
+			tabSwitcherName.TextTruncate = Enum.TextTruncate.SplitWord
+			tabSwitcherName.TextXAlignment = Enum.TextXAlignment.Left
+			tabSwitcherName.TextYAlignment = Enum.TextYAlignment.Top
+			tabSwitcherName.AutomaticSize = Enum.AutomaticSize.Y
+			tabSwitcherName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			tabSwitcherName.BackgroundTransparency = 1
+			tabSwitcherName.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			tabSwitcherName.BorderSizePixel = 0
+			tabSwitcherName.Size = UDim2.fromScale(1, 0)
+			tabSwitcherName.Parent = tabSwitcher
+			tabSwitcherName.LayoutOrder = 1
+
+			local tabSwitcherUIPadding = Instance.new("UIPadding")
+			tabSwitcherUIPadding.Name = "TabSwitcherUIPadding"
+			tabSwitcherUIPadding.PaddingLeft = UDim.new(0, 24)
+			tabSwitcherUIPadding.PaddingRight = UDim.new(0, 35)
+			tabSwitcherUIPadding.PaddingTop = UDim.new(0, 1)
+			tabSwitcherUIPadding.Parent = tabSwitcher
+
+			tabSwitcher.Parent = sectionTabSwitchers
+
+			local elements1 = Instance.new("Frame")
+			elements1.Name = "Elements"
+			elements1.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			elements1.BackgroundTransparency = 1
+			elements1.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			elements1.BorderSizePixel = 0
+			elements1.Position = UDim2.fromOffset(0, 63)
+			elements1.Size = UDim2.new(1, 0, 1, -63)
+			elements1.ClipsDescendants = true
+
+			local elementsUIPadding = Instance.new("UIPadding")
+			elementsUIPadding.Name = "ElementsUIPadding"
+			elementsUIPadding.PaddingRight = UDim.new(0, 5)
+			elementsUIPadding.PaddingTop = UDim.new(0, 10)
+			elementsUIPadding.PaddingBottom = UDim.new(0, 10)
+			elementsUIPadding.Parent = elements1
+
+			local elementsScrolling = Instance.new("ScrollingFrame")
+			elementsScrolling.Name = "ElementsScrolling"
+			elementsScrolling.AutomaticCanvasSize = Enum.AutomaticSize.Y
+			elementsScrolling.BottomImage = ""
+			elementsScrolling.CanvasSize = UDim2.new()
+			elementsScrolling.ScrollBarImageTransparency = 0.5
+			elementsScrolling.ScrollBarThickness = 1
+			elementsScrolling.TopImage = ""
+			elementsScrolling.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			elementsScrolling.BackgroundTransparency = 1
+			elementsScrolling.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			elementsScrolling.BorderSizePixel = 0
+			elementsScrolling.Size = UDim2.fromScale(1, 1)
+			elementsScrolling.ClipsDescendants = false
+
+			local elementsScrollingUIPadding = Instance.new("UIPadding")
+			elementsScrollingUIPadding.Name = "ElementsScrollingUIPadding"
+			elementsScrollingUIPadding.PaddingBottom = UDim.new(0, 5)
+			elementsScrollingUIPadding.PaddingLeft = UDim.new(0, 11)
+			elementsScrollingUIPadding.PaddingRight = UDim.new(0, 3)
+			elementsScrollingUIPadding.PaddingTop = UDim.new(0, 5)
+			elementsScrollingUIPadding.Parent = elementsScrolling
+
+			local elementsScrollingUIListLayout = Instance.new("UIListLayout")
+			elementsScrollingUIListLayout.Name = "ElementsScrollingUIListLayout"
+			elementsScrollingUIListLayout.Padding = UDim.new(0, 15)
+			elementsScrollingUIListLayout.FillDirection = Enum.FillDirection.Horizontal
+			elementsScrollingUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+			elementsScrollingUIListLayout.Parent = elementsScrolling
+
+			local left = Instance.new("Frame")
+			left.Name = "Left"
+			left.AutomaticSize = Enum.AutomaticSize.Y
+			left.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+			left.BackgroundTransparency = 1
+			left.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			left.BorderSizePixel = 0
+			left.Position = UDim2.fromScale(0.512, 0)
+			left.Size = UDim2.new(0.5, -10, 0, 0)
+
+			local leftUIListLayout = Instance.new("UIListLayout")
+			leftUIListLayout.Name = "LeftUIListLayout"
+			leftUIListLayout.Padding = UDim.new(0, 15)
+			leftUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+			leftUIListLayout.Parent = left
+
+			left.Parent = elementsScrolling
+
+			local right = Instance.new("Frame")
+			right.Name = "Right"
+			right.AutomaticSize = Enum.AutomaticSize.Y
+			right.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+			right.BackgroundTransparency = 1
+			right.BorderColor3 = Color3.fromRGB(0, 0, 0)
+			right.BorderSizePixel = 0
+			right.LayoutOrder = 1
+			right.Position = UDim2.fromScale(0.512, 0)
+			right.Size = UDim2.new(0.5, -10, 0, 0)
+
+			local rightUIListLayout = Instance.new("UIListLayout")
+			rightUIListLayout.Name = "RightUIListLayout"
+			rightUIListLayout.Padding = UDim.new(0, 15)
+			rightUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+			rightUIListLayout.Parent = right
+
+			right.Parent = elementsScrolling
+
+			elementsScrolling.Parent = elements1
+
+			-- TUTAJ BĘDĘ DODAWAĆ FUNKCJE SECTION, TOGGLE, SLIDER ITD Z ULEPSZONYMI ANIMACJAMI
+			-- Na razie pokazuję strukturę...
+
+			function TabFunctions:Section(Settings)
+				local SectionFunctions = {}
+				local section = Instance.new("Frame")
+				section.Name = "Section"
+				section.AutomaticSize = Enum.AutomaticSize.Y
+				section.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+				section.BackgroundTransparency = 0.5
+				section.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				section.BorderSizePixel = 0
+				section.Position = UDim2.fromScale(0, 6.78e-08)
+				section.Size = UDim2.fromScale(1, 0)
+				section.ClipsDescendants = true
+				section.Parent = Settings.Side == "Left" and left or right
+
+				local sectionUICorner = Instance.new("UICorner")
+				sectionUICorner.Name = "SectionUICorner"
+				sectionUICorner.CornerRadius = UDim.new(0, 8)
+				sectionUICorner.Parent = section
+
+				local sectionUIStroke = Instance.new("UIStroke")
+				sectionUIStroke.Name = "SectionUIStroke"
+				sectionUIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+				sectionUIStroke.Color = Color3.fromRGB(60, 60, 60)
+				sectionUIStroke.Transparency = 0.9
+				sectionUIStroke.Parent = section
+
+				local sectionUIListLayout = Instance.new("UIListLayout")
+				sectionUIListLayout.Name = "SectionUIListLayout"
+				sectionUIListLayout.Padding = UDim.new(0, 10)
+				sectionUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+				sectionUIListLayout.Parent = section
+
+				local sectionUIPadding = Instance.new("UIPadding")
+				sectionUIPadding.Name = "SectionUIPadding"
+				sectionUIPadding.PaddingBottom = UDim.new(0, 20)
+				sectionUIPadding.PaddingLeft = UDim.new(0, 20)
+				sectionUIPadding.PaddingRight = UDim.new(0, 18)
+				sectionUIPadding.PaddingTop = UDim.new(0, 22)
+				sectionUIPadding.Parent = section
+
+				function SectionFunctions:Button(Settings, Flag)
+					local ButtonFunctions = {Settings = Settings}
+					local button = Instance.new("Frame")
+					button.Name = "Button"
+					button.AutomaticSize = Enum.AutomaticSize.Y
+					button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+					button.BackgroundTransparency = 1
+					button.BorderColor3 = Color3.fromRGB(0, 0, 0)
+					button.BorderSizePixel = 0
+					button.Size = UDim2.new(1, 0, 0, 38)
+					button.Parent = section
+
+					local buttonInteract = Instance.new("TextButton")
+					buttonInteract.Name = "ButtonInteract"
+					buttonInteract.FontFace = Font.new(assets.interFont, Enum.FontWeight.Medium)
+					buttonInteract.RichText = true
+					buttonInteract.TextColor3 = Color3.fromRGB(200, 200, 200)
+					buttonInteract.TextSize = 13
+					buttonInteract.TextTransparency = 0.2
+					buttonInteract.TextTruncate = Enum.TextTruncate.AtEnd
+					buttonInteract.TextXAlignment = Enum.TextXAlignment.Left
+					buttonInteract.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					buttonInteract.BackgroundTransparency = 1
+					buttonInteract.BorderColor3 = Color3.fromRGB(0, 0, 0)
+					buttonInteract.BorderSizePixel = 0
+					buttonInteract.Size = UDim2.fromScale(1, 1)
+					buttonInteract.Parent = button
+					buttonInteract.Text = ButtonFunctions.Settings.Name
+
+					local buttonImage = Instance.new("ImageLabel")
+					buttonImage.Name = "ButtonImage"
+					buttonImage.Image = assets.buttonImage
+					buttonImage.ImageTransparency = 0.6
+					buttonImage.AnchorPoint = Vector2.new(1, 0.5)
+					buttonImage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					buttonImage.BackgroundTransparency = 1
+					buttonImage.BorderColor3 = Color3.fromRGB(0, 0, 0)
+					buttonImage.BorderSizePixel = 0
+					buttonImage.Position = UDim2.fromScale(1, 0.5)
+					buttonImage.Size = UDim2.fromOffset(15, 15)
+					buttonImage.Parent = button
+
+					local TweenSettings = {
+						DefaultTransparency = 0.2,
+						HoverTransparency = 0,
+						EasingStyle = Enum.EasingStyle.Quad
+					}
+
+					local function ChangeState(State)
+						if State == "Idle" then
+							Tween(buttonInteract, AnimationPresets.Fast, {
+								TextTransparency = TweenSettings.DefaultTransparency
+							}):Play()
+							Tween(buttonImage, AnimationPresets.Fast, {
+								ImageTransparency = TweenSettings.DefaultTransparency
+							}):Play()
+						elseif State == "Hover" then
+							Tween(buttonInteract, AnimationPresets.Fast, {
+								TextTransparency = TweenSettings.HoverTransparency
+							}):Play()
+							Tween(buttonImage, AnimationPresets.Fast, {
+								ImageTransparency = TweenSettings.HoverTransparency
+							}):Play()
+						end
+					end
+
+					local function Callback()
+						if ButtonFunctions.Settings.Callback then
+							ButtonFunctions.Settings.Callback()
+						end
+					end
+
+					buttonInteract.MouseEnter:Connect(function()
+						ChangeState("Hover")
+					end)
+					buttonInteract.MouseLeave:Connect(function()
+						ChangeState("Idle")
+					end)
+
+					buttonInteract.MouseButton1Click:Connect(Callback)
+					function ButtonFunctions:UpdateName(Name)
+						buttonInteract.Text = Name
+					end
+					function ButtonFunctions:SetVisibility(State)
+						button.Visible = State
+					end
+
+					if Flag then
+						Meow.Options[Flag] = ButtonFunctions
+					end
+					return ButtonFunctions
+				end
+
+				function SectionFunctions:Header(Settings, Flag)
+					local HeaderFunctions = {Settings = Settings}
+
+					local header = Instance.new("Frame")
+					header.Name = "Header"
+					header.AutomaticSize = Enum.AutomaticSize.Y
+					header.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+					header.BackgroundTransparency = 1
+					header.BorderColor3 = Color3.fromRGB(0, 0, 0)
+					header.BorderSizePixel = 0
+					header.LayoutOrder = 0
+					header.Size = UDim2.fromScale(1, 0)
+					header.Parent = section
+
+					local uIPadding = Instance.new("UIPadding")
+					uIPadding.Name = "UIPadding"
+					uIPadding.PaddingBottom = UDim.new(0, 5)
+					uIPadding.Parent = header
+
+					local headerText = Instance.new("TextLabel")
+					headerText.Name = "HeaderText"
+					headerText.FontFace = Font.new(
+						assets.interFont,
+						Enum.FontWeight.Bold,
+						Enum.FontStyle.Normal
+					)
+					headerText.RichText = true
+					headerText.Text = HeaderFunctions.Settings.Text or HeaderFunctions.Settings.Name
+					headerText.TextColor3 = Color3.fromRGB(200, 200, 200)
+					headerText.TextSize = 15
+					headerText.TextTransparency = 0.1
+					headerText.TextWrapped = true
+					headerText.TextXAlignment = Enum.TextXAlignment.Left
+					headerText.AutomaticSize = Enum.AutomaticSize.Y
+					headerText.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+					headerText.BackgroundTransparency = 1
+					headerText.BorderColor3 = Color3.fromRGB(0, 0, 0)
+					headerText.BorderSizePixel = 0
+					headerText.Size = UDim2.fromScale(1, 0)
+					headerText.Parent = header
+
+					function HeaderFunctions:UpdateName(New)
+						headerText.Text = New
+					end
+					function HeaderFunctions:SetVisibility(State)
+						header.Visible = State
+					end
+
+					if Flag then
+						Meow.Options[Flag] = HeaderFunctions
+					end
+					return HeaderFunctions
+				end
+
+				return SectionFunctions
+			end
+
+			local function SelectCurrentTab()
+				local easetime = 0.2
+
+				if currentTabInstance then
+					local outTween = Tween(currentTabInstance:FindFirstChild("Elements"), TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+						BackgroundTransparency = 1
+					})
+					outTween:Play()
+					outTween.Completed:Wait()
+					currentTabInstance.Parent = nil
+				end
+
+				for i, tabInfo in pairs(tabs) do
+					Tween(i, AnimationPresets.Smooth, {
+						BackgroundTransparency = (i == tabSwitcher and 0.5 or 1)
+					}):Play()
+
+					if tabInfo.tabStroke then
+						Tween(tabInfo.tabStroke, AnimationPresets.Smooth, {
+							Transparency = (i == tabSwitcher and 0.85 or 1)
+						}):Play()
+					end
+					if tabInfo.switcherImage then
+						Tween(tabInfo.switcherImage, AnimationPresets.Smooth, {
+							ImageTransparency = (i == tabSwitcher and 0.1 or 0.5)
+						}):Play()
+					end
+					if tabInfo.switcherName then
+						Tween(tabInfo.switcherName, AnimationPresets.Smooth, {
+							TextTransparency = (i == tabSwitcher and 0 or 0.4)
+						}):Play()
+					end
+				end
+
+				local elementsFrame = elements1:FindFirstChild("Elements")
+				if elementsFrame then
+					Tween(elementsFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+						BackgroundTransparency = 0
+					}):Play()
+				end
+
+				tabs[tabSwitcher].tabContent.Parent = content
+				currentTabInstance = tabs[tabSwitcher].tabContent
+				currentTab.Text = Settings.Name
+			end
+
+			tabSwitcher.MouseButton1Click:Connect(function()
+				SelectCurrentTab()
+			end)
+
+			function TabFunctions:Select()
+				SelectCurrentTab()
+			end
+
+			-- Config system - tutaj będzie InsertConfigSection...
+
+			tabs[tabSwitcher] = {
+				tabContent = elements1,
+				tabStroke = tabSwitcherUIStroke,
+				switcherImage = tabImage,
+				switcherName = tabSwitcherName,
+			}
+
+			return TabFunctions
+		end
+
+		return SectionFunctions
+	end
+
+	function WindowFunctions:Notify(Settings)
+		local NotificationFunctions = {}
+
+		local notification = Instance.new("Frame")
+		notification.Name = "Notification"
+		notification.AnchorPoint = Vector2.new(0.5, 0.5)
+		notification.AutomaticSize = Enum.AutomaticSize.Y
+		notification.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+		notification.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		notification.BorderSizePixel = 0
+		notification.Position = UDim2.fromScale(0.5, 0.5)
+		notification.Size = UDim2.fromOffset(Settings.SizeX or 280, 0)
+
+		notification.Parent = notifications
+
+		local notificationUIStroke = Instance.new("UIStroke")
+		notificationUIStroke.Name = "NotificationUIStroke"
+		notificationUIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		notificationUIStroke.Color = Color3.fromRGB(80, 80, 80)
+		notificationUIStroke.Transparency = 0.85
+		notificationUIStroke.Parent = notification
+
+		local notificationUICorner = Instance.new("UICorner")
+		notificationUICorner.Name = "NotificationUICorner"
+		notificationUICorner.CornerRadius = UDim.new(0, 10)
+		notificationUICorner.Parent = notification
+
+		local notificationUIScale = Instance.new("UIScale")
+		notificationUIScale.Name = "NotificationUIScale"
+		notificationUIScale.Parent = notification
+		notificationUIScale.Scale = 0
+
+		local notificationInformation = Instance.new("Frame")
+		notificationInformation.Name = "NotificationInformation"
+		notificationInformation.AutomaticSize = Enum.AutomaticSize.Y
+		notificationInformation.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		notificationInformation.BackgroundTransparency = 1
+		notificationInformation.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		notificationInformation.BorderSizePixel = 0
+		notificationInformation.Size = UDim2.fromScale(1, 1)
+
+		local notificationTitle = Instance.new("TextLabel")
+		notificationTitle.Name = "NotificationTitle"
+		notificationTitle.FontFace = Font.new(
+			assets.interFont,
+			Enum.FontWeight.Bold,
+			Enum.FontStyle.Normal
+		)
+		notificationTitle.RichText = true
+		notificationTitle.Text = Settings.Title
+		notificationTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+		notificationTitle.TextSize = 13
+		notificationTitle.TextTransparency = 0
+		notificationTitle.TextTruncate = Enum.TextTruncate.SplitWord
+		notificationTitle.TextXAlignment = Enum.TextXAlignment.Left
+		notificationTitle.TextYAlignment = Enum.TextYAlignment.Top
+		notificationTitle.AutomaticSize = Enum.AutomaticSize.XY
+		notificationTitle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		notificationTitle.BackgroundTransparency = 1
+		notificationTitle.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		notificationTitle.BorderSizePixel = 0
+		notificationTitle.Size = UDim2.new(1, -12, 0, 0)
+
+		local notificationTitleUIPadding = Instance.new("UIPadding")
+		notificationTitleUIPadding.Name = "NotificationTitleUIPadding"
+		notificationTitleUIPadding.PaddingRight = UDim.new(0, 25)
+		notificationTitleUIPadding.Parent = notificationTitle
+
+		notificationTitle.Parent = notificationInformation
+
+		local notificationDescription = Instance.new("TextLabel")
+		notificationDescription.Name = "NotificationDescription"
+		notificationDescription.FontFace = Font.new(
+			assets.interFont,
+			Enum.FontWeight.Medium,
+			Enum.FontStyle.Normal
+		)
+		notificationDescription.Text = Settings.Description
+		notificationDescription.TextColor3 = Color3.fromRGB(180, 180, 180)
+		notificationDescription.TextSize = 11
+		notificationDescription.TextTransparency = 0.2
+		notificationDescription.TextWrapped = true
+		notificationDescription.RichText = true
+		notificationDescription.TextXAlignment = Enum.TextXAlignment.Left
+		notificationDescription.TextYAlignment = Enum.TextYAlignment.Top
+		notificationDescription.AutomaticSize = Enum.AutomaticSize.XY
+		notificationDescription.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		notificationDescription.BackgroundTransparency = 1
+		notificationDescription.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		notificationDescription.BorderSizePixel = 0
+		notificationDescription.Size = UDim2.new(1, -12, 0, 0)
+
+		local notificationDescriptionUIPadding = Instance.new("UIPadding")
+		notificationDescriptionUIPadding.Name = "NotificationDescriptionUIPadding"
+		notificationDescriptionUIPadding.PaddingRight = UDim.new(0, 25)
+		notificationDescriptionUIPadding.PaddingTop = UDim.new(0, 17)
+		notificationDescriptionUIPadding.Parent = notificationDescription
+
+		notificationDescription.Parent = notificationInformation
+
+		local notificationUIPadding = Instance.new("UIPadding")
+		notificationUIPadding.Name = "NotificationUIPadding"
+		notificationUIPadding.PaddingBottom = UDim.new(0, 12)
+		notificationUIPadding.PaddingLeft = UDim.new(0, 10)
+		notificationUIPadding.PaddingRight = UDim.new(0, 10)
+		notificationUIPadding.PaddingTop = UDim.new(0, 10)
+		notificationUIPadding.Parent = notificationInformation
+
+		notificationInformation.Parent = notification
+
+		local notificationControls = Instance.new("Frame")
+		notificationControls.Name = "NotificationControls"
+		notificationControls.AutomaticSize = Enum.AutomaticSize.Y
+		notificationControls.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		notificationControls.BackgroundTransparency = 1
+		notificationControls.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		notificationControls.BorderSizePixel = 0
+		notificationControls.Size = UDim2.fromScale(1, 1)
+
+		local interactable = Instance.new("TextButton")
+		interactable.Name = "Interactable"
+		interactable.FontFace = Font.new(assets.interFont)
+		interactable.Text = "✓"
+		interactable.TextColor3 = Color3.fromRGB(100, 200, 100)
+		interactable.TextSize = 17
+		interactable.TextTransparency = 0
+		interactable.AnchorPoint = Vector2.new(1, 0.5)
+		interactable.AutomaticSize = Enum.AutomaticSize.XY
+		interactable.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		interactable.BackgroundTransparency = 1
+		interactable.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		interactable.BorderSizePixel = 0
+		interactable.LayoutOrder = 1
+		interactable.Position = UDim2.fromScale(1, 0.5)
+		interactable.Parent = notificationControls
+
+		local uIPadding = Instance.new("UIPadding")
+		uIPadding.Name = "UIPadding"
+		uIPadding.PaddingBottom = UDim.new(0, 6)
+		uIPadding.PaddingRight = UDim.new(0, 13)
+		uIPadding.PaddingTop = UDim.new(0, 6)
+		uIPadding.Parent = notificationControls
+
+		notificationControls.Parent = notification
+
+		local tweens = {
+			In = Tween(notificationUIScale, AnimationPresets.Smooth, {
+				Scale = Settings.Scale or 1
+			}),
+			Out = Tween(notificationUIScale, AnimationPresets.Smooth, {
+				Scale = 0
+			}),
+		}
+
+		local styles = {
+			None = function() interactable:Destroy() end,
+			Confirm = function() interactable.Text = "✓" end,
+			Cancel = function() interactable.Text = "✗" end
+		}
+
+		local style = styles[Settings.Style] or function() interactable:Destroy() end
+		style()
+
+		if interactable then
+			interactable.MouseButton1Click:Connect(function()
+				NotificationFunctions:Cancel()
+				if Settings.Callback then
+					task.spawn(Settings.Callback)
+				end
+			end)
+		end
+
+		local AnimateNotification = task.spawn(function()
+			tweens.In:Play()
+
+			Settings.Lifetime = Settings.Lifetime or 3
+
+			if Settings.Lifetime ~= 0 then
+				task.wait(Settings.Lifetime)
+
+				local out = tweens.Out
+				out:Play()
+				out.Completed:Wait()
+				notification:Destroy()
+			end
+		end)
+
+		function NotificationFunctions:UpdateTitle(New)
+			notificationTitle.Text = New
+		end
+
+		function NotificationFunctions:UpdateDescription(New)
+			notificationDescription.Text = New
+		end
+
+		function NotificationFunctions:Resize(X)
+			local targ = X or 250
+			notification.Size = UDim2.fromOffset(targ, 0)
+		end
+
+		function NotificationFunctions:Cancel()
+			task.cancel(AnimateNotification)
+
+			local out = tweens.Out
+			out:Play()
+			out.Completed:Wait()
+			notification:Destroy()
+		end
+
+		return NotificationFunctions
+	end
+
+	function WindowFunctions:SetNotificationsState(State)
+		notifications.Visible = State
+	end
+
+	function WindowFunctions:GetNotificationsState(State)
+		return notifications.Visible
+	end
+
+	function WindowFunctions:SetState(State)
+		windowState = State
+		Tween(base, AnimationPresets.Smooth, { BackgroundTransparency = State and (acrylicBlur and 0.08 or 0) or 1 }):Play()
+		base.Visible = State
+	end
+
+	function WindowFunctions:GetState()
+		return windowState
+	end
+
+	local onUnloadCallback
+
+	function WindowFunctions:Unload()
+		if onUnloadCallback then
+			onUnloadCallback()  
+		end
+		meow:Destroy()
+		unloaded = true
+	end
+
+	function WindowFunctions.onUnloaded(callback)
+		onUnloadCallback = callback
+	end
+
+	local MenuKeybind = Settings.Keybind or Enum.KeyCode.RightControl
+
+	local function ToggleMenu()
+		local state = not WindowFunctions:GetState()
+		WindowFunctions:SetState(state)
+		WindowFunctions:Notify({
+			Title = Settings.Title,
+			Description = (state and "✨ Menu otwarte" or "✨ Menu zamknięte") .. " | " .. tostring(MenuKeybind.Name),
+			Lifetime = 3
+		})
+	end
+
+	UserInputService.InputEnded:Connect(function(inp, gpe)
+		if gpe then return end
+		if inp.KeyCode == MenuKeybind then
+			ToggleMenu()
+		end
+	end)
+
+	minimize.MouseButton1Click:Connect(ToggleMenu)
+	exit.MouseButton1Click:Connect(function()
+		WindowFunctions:Dialog({
+			Title = Settings.Title,
+			Description = "Na pewno chcesz wyjść? Niezapisane konfiguracje zostaną utracone.",
+			Buttons = {
+				{
+					Name = "Potwierdź",
+					Callback = function()
+						WindowFunctions:Unload()
+					end,
+				},
+				{
+					Name = "Anuluj"
+				}
+			}
+		})
+	end)
+
+	function WindowFunctions:SetKeybind(Keycode)
+		MenuKeybind = Keycode
+	end
+
+	function WindowFunctions:SetAcrylicBlurState(State)
+		acrylicBlur = State
+		Tween(base, AnimationPresets.Fast, { BackgroundTransparency = State and 0.08 or 0 }):Play()
+	end
+
+	function WindowFunctions:GetAcrylicBlurState()
+		return acrylicBlur
+	end
+
+	local function _SetUserInfoState(State)
+		if State then
+			headshot.Image = (isReady and headshotImage) or "rbxassetid://0"
+			username.Text = "@" .. LocalPlayer.Name
+			displayName.Text = LocalPlayer.DisplayName
+		else
+			headshot.Image = assets.userInfoBlurred
+			local nameLength = #LocalPlayer.Name
+			local displayNameLength = #LocalPlayer.DisplayName
+			username.Text = "@" .. string.rep(".", nameLength)
+			displayName.Text = string.rep(".", displayNameLength)
+		end
+	end
+
+	local showUserInfo
+	if Settings.ShowUserInfo ~= nil then
+		showUserInfo = Settings.ShowUserInfo
+	else
+		showUserInfo = true
+	end
+
+	_SetUserInfoState(showUserInfo)
+
+	function WindowFunctions:SetUserInfoState(State)
+		_SetUserInfoState(State)
+	end
+	function WindowFunctions:GetUserInfoState(State)
+		return showUserInfo
+	end
+
+	function WindowFunctions:SetSize(Size)
+		base.Size = Size
+	end
+	function WindowFunctions:GetSize(Size)
+		return base.Size
+	end
+
+	function WindowFunctions:SetScale(Scale)
+		baseUIScale.Scale = Scale
+	end
+	function WindowFunctions:GetScale()
+		return baseUIScale.Scale
+	end
+
+	meow.Enabled = false
+
+	local assetList = {}
+	for _, assetId in pairs(assets) do
+		table.insert(assetList, assetId)
+	end
+
+	ContentProvider:PreloadAsync(assetList)
+	meow.Enabled = true
+	windowState = true
+
+	return WindowFunctions
+end
+
+function Meow:Demo()
+	local Window = Meow:Window({
+		Title = "🐱 Meow UI",
+		Subtitle = "Nowoczesna i łatwa w użyciu biblioteka UI",
+		Size = UDim2.fromOffset(868, 650),
+		DragStyle = 1,
+		DisabledWindowControls = {},
+		ShowUserInfo = true,
+		Keybind = Enum.KeyCode.RightControl,
+		AcrylicBlur = true,
+	})
+
+	local globalSettings = {
+		UIBlurToggle = Window:GlobalSetting({
+			Name = "Blur UI",
+			Default = Window:GetAcrylicBlurState(),
+			Callback = function(bool)
+				Window:SetAcrylicBlurState(bool)
+			end,
+		}),
+		NotificationToggler = Window:GlobalSetting({
+			Name = "Powiadomienia",
+			Default = Window:GetNotificationsState(),
+			Callback = function(bool)
+				Window:SetNotificationsState(bool)
+			end,
+		}),
+		ShowUserInfo = Window:GlobalSetting({
+			Name = "Pokaż info użytkownika",
+			Default = Window:GetUserInfoState(),
+			Callback = function(bool)
+				Window:SetUserInfoState(bool)
+			end,
+		})
+	}
+
+	local tabGroups = {
+		TabGroup1 = Window:TabGroup()
+	}
+
+	local tabs = {
+		Main = tabGroups.TabGroup1:Tab({ Name = "Demo", Image = "rbxassetid://18821914323" }),
+		Settings = tabGroups.TabGroup1:Tab({ Name = "Ustawienia", Image = "rbxassetid://10734950309" })
+	}
+
+	local sections = {
+		MainSection1 = tabs.Main:Section({ Side = "Left" }),
+	}
+
+	sections.MainSection1:Header({
+		Name = "🎉 Witaj w Meow UI!"
+	})
+
+	sections.MainSection1:Button({
+		Name = "Kliknij mnie! 🖱️",
+		Callback = function()
+			Window:Notify({
+				Title = "Meow!",
+				Description = "Przycisk działa doskonale! 🎉",
+				Lifetime = 3
+			})
+		end,
+	})
+
+	Window:Notify({
+		Title = "🐱 Meow UI",
+		Description = "Biblioteka załadowana pomyślnie!",
+		Lifetime = 5
+	})
+
+	tabs.Main:Select()
+end
+
+return Meow
