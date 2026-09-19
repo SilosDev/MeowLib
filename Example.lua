@@ -2,7 +2,7 @@ local Meow = loadstring(game:HttpGet("https://raw.githubusercontent.com/SilosDev
 
 local Window = Meow:Window({
 	Title = "Meow Demo",
-	Subtitle = "Nowoczesna biblioteka UI.",
+	Subtitle = "Modern UI library for Roblox.",
 	Size = UDim2.fromOffset(868, 650),
 	DragStyle = 1,
 	DisabledWindowControls = {},
@@ -19,31 +19,31 @@ local globalSettings = {
 			Window:SetAcrylicBlurState(bool)
 			Window:Notify({
 				Title = Window.Settings.Title,
-				Description = (bool and "✨ Włączono" or "✨ Wyłączono") .. " UI Blur",
+				Description = (bool and "Enabled" or "Disabled") .. " UI Blur",
 				Lifetime = 5
 			})
 		end,
 	}),
 	NotificationToggler = Window:GlobalSetting({
-		Name = "Powiadomienia",
+		Name = "Notifications",
 		Default = Window:GetNotificationsState(),
 		Callback = function(bool)
 			Window:SetNotificationsState(bool)
 			Window:Notify({
 				Title = Window.Settings.Title,
-				Description = (bool and "Włączono" or "Wyłączono") .. " Powiadomienia",
+				Description = (bool and "Enabled" or "Disabled") .. " Notifications",
 				Lifetime = 5
 			})
 		end,
 	}),
 	ShowUserInfo = Window:GlobalSetting({
-		Name = "Pokaż info użytkownika",
+		Name = "Show User Info",
 		Default = Window:GetUserInfoState(),
 		Callback = function(bool)
 			Window:SetUserInfoState(bool)
 			Window:Notify({
 				Title = Window.Settings.Title,
-				Description = (bool and "👤 Widoczne" or "👤 Ukryte") .. " dane użytkownika",
+				Description = (bool and "Showing" or "Hiding") .. " User Info",
 				Lifetime = 5
 			})
 		end,
@@ -56,7 +56,7 @@ local tabGroups = {
 
 local tabs = {
 	Main = tabGroups.TabGroup1:Tab({ Name = "Demo", Image = "rbxassetid://18821914323" }),
-	Settings = tabGroups.TabGroup1:Tab({ Name = "Ustawienia", Image = "rbxassetid://10734950309" })
+	Settings = tabGroups.TabGroup1:Tab({ Name = "Settings", Image = "rbxassetid://10734950309" })
 }
 
 local sections = {
@@ -64,24 +64,24 @@ local sections = {
 }
 
 sections.MainSection1:Header({
-	Name = "🎉 Przycisk i Dialog"
+	Name = "Button and Dialog"
 })
 
 sections.MainSection1:Button({
-	Name = "Kliknij mnie!",
+	Name = "Click me!",
 	Callback = function()
 		Window:Dialog({
 			Title = Window.Settings.Title,
-			Description = "To jest przykładowy dialog! Możesz tutaj umieścić dowolną wiadomość.",
+			Description = "This is an example dialog! You can place any message here.",
 			Buttons = {
 				{
-					Name = "Potwierdź",
+					Name = "Confirm",
 					Callback = function()
-						print("Potwierdzono!")
+						print("Confirmed!")
 					end,
 				},
 				{
-					Name = "Anuluj"
+					Name = "Cancel"
 				}
 			}
 		})
@@ -89,51 +89,51 @@ sections.MainSection1:Button({
 })
 
 sections.MainSection1:Header({
-	Name = "📝 Pole Input"
+	Name = "Input Field"
 })
 
 sections.MainSection1:Input({
-	Name = "Wpisz tekst",
-	Placeholder = "Wpisz coś tutaj...",
+	Name = "Enter text",
+	Placeholder = "Type something here...",
 	AcceptedCharacters = "All",
 	Callback = function(input)
 		Window:Notify({
 			Title = Window.Settings.Title,
-			Description = "Wpisany tekst: " .. input
+			Description = "You entered: " .. input
 		})
 	end,
 	onChanged = function(input)
-		print("Aktualny tekst: " .. input)
+		print("Current text: " .. input)
 	end,
 }, "Input")
 
 sections.MainSection1:Header({
-	Name = "🎚️ Suwak"
+	Name = "Slider"
 })
 
 sections.MainSection1:Slider({
-	Name = "Głośność",
+	Name = "Volume",
 	Default = 50,
 	Minimum = 0,
 	Maximum = 100,
 	DisplayMethod = "Percent",
 	Precision = 0,
 	Callback = function(Value)
-		print("Zmieniono na ".. Value)
+		print("Changed to ".. Value)
 	end
 }, "Slider")
 
 sections.MainSection1:Header({
-	Name = "🔘 Przełącznik"
+	Name = "Toggle"
 })
 
 sections.MainSection1:Toggle({
-	Name = "Włącz funkcję",
+	Name = "Enable Feature",
 	Default = false,
 	Callback = function(value)
 		Window:Notify({
 			Title = Window.Settings.Title,
-			Description = (value and "Włączono " or "Wyłączono ") .. "funkcję"
+			Description = (value and "Enabled " or "Disabled ") .. "Feature"
 		})
 	end,
 }, "Toggle")
@@ -143,47 +143,47 @@ sections.MainSection1:Header({
 })
 
 sections.MainSection1:Keybind({
-	Name = "Skrót klawiszowy",
+	Name = "Keyboard Shortcut",
 	Blacklist = false,
 	Callback = function(binded)
 		Window:Notify({
 			Title = "Meow",
-			Description = "Nacisnąłeś: "..tostring(binded.Name),
+			Description = "You pressed: "..tostring(binded.Name),
 			Lifetime = 3
 		})
 	end,
 	onBinded = function(bind)
 		Window:Notify({
 			Title = "Meow",
-			Description = "Przypisano skrót: "..tostring(bind.Name),
+			Description = "Successfully bound: "..tostring(bind.Name),
 			Lifetime = 3
 		})
 	end,
 }, "Keybind")
 
 sections.MainSection1:Header({
-	Name = "Kolor"
+	Name = "Color"
 })
 
 sections.MainSection1:Colorpicker({
-	Name = "Wybierz kolor",
+	Name = "Pick Color",
 	Default = Color3.fromRGB(0, 255, 255),
 	Callback = function(color)
-		print("Kolor: ", color)
+		print("Color: ", color)
 	end,
 }, "Colorpicker")
 
 local alphaColorPicker = sections.MainSection1:Colorpicker({
-	Name = "Kolor z przezroczystością",
+	Name = "Color with Transparency",
 	Default = Color3.fromRGB(255,0,0),
 	Alpha = 0,
 	Callback = function(color, alpha)
-		print("Kolor: ", color, " Alfa: ", alpha)
+		print("Color: ", color, " Alpha: ", alpha)
 	end,
 }, "TransparencyColorpicker")
 
 sections.MainSection1:Header({
-	Name = "Efekty"
+	Name = "Effects"
 })
 
 local rainbowActive
@@ -191,7 +191,7 @@ local rainbowConnection
 local hue = 0
 
 sections.MainSection1:Toggle({
-	Name = "Tęczowy efekt",
+	Name = "Rainbow Effect",
 	Default = false,
 	Callback = function(value)
 		rainbowActive = value
@@ -213,77 +213,77 @@ sections.MainSection1:Header({
 })
 
 local optionTable = {
-	"Jabłko",
-	"Banan",
-	"Pomarańcza",
-	"Winogrono",
-	"Ananas",
+	"Apple",
+	"Banana",
+	"Orange",
+	"Grapes",
+	"Pineapple",
 	"Mango",
-	"Truskawka",
-	"Borówka",
-	"Arbuz",
-	"Brzoskwinia"
+	"Strawberry",
+	"Blueberry",
+	"Watermelon",
+	"Peach"
 }
 
 local Dropdown = sections.MainSection1:Dropdown({
-	Name = "Wybierz owoc",
+	Name = "Select Fruit",
 	Multi = false,
 	Required = true,
 	Options = optionTable,
 	Default = 1,
 	Callback = function(Value)
-		print("Wybrano: ".. Value)
+		print("Selected: ".. Value)
 	end,
 }, "Dropdown")
 
 local MultiDropdown = sections.MainSection1:Dropdown({
-	Name = "Wielokrotny wybór",
+	Name = "Multiple Selection",
 	Search = true,
 	Multi = true,
 	Required = false,
 	Options = optionTable,
-	Default = {"Jabłko", "Pomarańcza"},
+	Default = {"Apple", "Orange"},
 	Callback = function(Value)
 		local Values = {}
 		for Value, State in next, Value do
 			table.insert(Values, Value)
 		end
-		print("Wybrano:", table.concat(Values, ", "))
+		print("Selected:", table.concat(Values, ", "))
 	end,
 }, "MultiDropdown")
 
 sections.MainSection1:Button({
-	Name = "Zmień zaznaczenie",
+	Name = "Update Selection",
 	Callback = function()
 		Dropdown:UpdateSelection("Mango")
-		MultiDropdown:UpdateSelection({"Banan", "Ananas"})
+		MultiDropdown:UpdateSelection({"Banana", "Pineapple"})
 	end,
 })
 
 sections.MainSection1:Divider()
 
 sections.MainSection1:Header({
-	Text = "Informacje"
+	Text = "Information"
 })
 
 sections.MainSection1:Paragraph({
-	Header = "O Meow UI",
-	Body = "Meow UI to nowoczesna i łatwa w użyciu biblioteka interfejsu. Oferuje wiele elementów do tworzenia profesjonalnych UI."
+	Header = "About Meow UI",
+	Body = "Meow UI is a modern and easy-to-use interface library. It offers many elements for creating professional UIs."
 })
 
 sections.MainSection1:Label({
-	Text = "Biblioteka została stworzona z myślą o wydajności."
+	Text = "The library was created with performance in mind."
 })
 
 sections.MainSection1:SubLabel({
-	Text = "Wszystkie animacje są płynne i zoptymalizowane."
+	Text = "All animations are smooth and optimized."
 })
 
 Meow:SetFolder("Meow")
 tabs.Settings:InsertConfigSection("Left")
 
 Window.onUnloaded(function()
-	print("Meow UI załadowana i działająca!")
+	print("Meow UI loaded and working!")
 end)
 
 tabs.Main:Select()
