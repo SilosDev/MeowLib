@@ -1,5 +1,5 @@
 # MeowLib UI Library
-![image](https://github.com/user-attachments/assets/991cd465-8a61)
+![image]()
 
 - Extensive Documentation
 - Beautiful Interface
