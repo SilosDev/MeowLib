@@ -2083,7 +2083,7 @@ function Meow:Window(Settings)
 		WindowFunctions:SetState(state)
 		WindowFunctions:Notify({
 			Title = Settings.Title,
-			Description = (state and "✨ Menu otwarte" or "✨ Menu zamknięte") .. " | " .. tostring(MenuKeybind.Name),
+			Description = (state and " Menu otwarte" or " Menu zamknięte") .. " | " .. tostring(MenuKeybind.Name),
 			Lifetime = 3
 		})
 	end
@@ -2187,7 +2187,7 @@ end
 
 function Meow:Demo()
 	local Window = Meow:Window({
-		Title = "🐱 Meow UI",
+		Title = "Meow UI",
 		Subtitle = "Nowoczesna i łatwa w użyciu biblioteka UI",
 		Size = UDim2.fromOffset(868, 650),
 		DragStyle = 1,
@@ -2235,7 +2235,7 @@ function Meow:Demo()
 	}
 
 	sections.MainSection1:Header({
-		Name = "🎉 Witaj w Meow UI!"
+		Name = "Witaj w Meow UI!"
 	})
 
 	sections.MainSection1:Button({
@@ -2250,7 +2250,7 @@ function Meow:Demo()
 	})
 
 	Window:Notify({
-		Title = "🐱 Meow UI",
+		Title = "Meow UI",
 		Description = "Biblioteka załadowana pomyślnie!",
 		Lifetime = 5
 	})
